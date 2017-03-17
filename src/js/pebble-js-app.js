@@ -12,7 +12,7 @@
 //    <http://www.gnu.org/licenses/>.
 
 
-var CONSOLELOG = 1;
+var CONSOLELOG = 0;
 
 var window;
 var server="";
