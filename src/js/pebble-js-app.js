@@ -12,12 +12,15 @@
 //    <http://www.gnu.org/licenses/>.
 
 
+var CONSOLELOG = 1;
+
 var window;
 var server="";
 var server_url="";
 var user="";
 var pass="";
 var active_player=1;
+var jumps="big";
 var http_timeout=1200;
 var actual_vol=0;
 
@@ -33,21 +36,21 @@ function send_json_to_xbmc(json_string){
 				//console.log("Button sent.");
 			}
 			else { 
-				console.log("Error1");
+				if (CONSOLELOG) {console.log("Error1");}
 				Pebble.showSimpleNotificationOnPebble("ERROR", "Unable to connect:\n "+server_url);
 			}
 		}
 		else{
-			console.log("Error2");
+			if (CONSOLELOG) {console.log("Error2");}
 			Pebble.showSimpleNotificationOnPebble("ERROR", "Unable to connect:\n "+server_url);
 		}
 	};
 	req.onerror = function(e) {
-		console.log("Error3");
+		if (CONSOLELOG) {console.log("Error3");}
 		Pebble.showSimpleNotificationOnPebble("ERROR", "Unable to connect:\n "+server_url);
 	};
 	req.onabort = function(e) {
-		console.log("Error4");
+		if (CONSOLELOG) {console.log("Error4");}
 		Pebble.showSimpleNotificationOnPebble("ERROR", "Unable to connect:\n "+server_url);
 	};
 	req.send(null);
@@ -190,12 +193,12 @@ function button_info(){
 
 function button_action_rev(){	
 	//send_json_to_xbmc('/jsonrpc?request={"jsonrpc":"2.0","method":"Player.SetSpeed","params":{"playerid":'+active_player+',"speed":-32},"id":1}');
-	send_json_to_xbmc('/jsonrpc?request={"jsonrpc":"2.0","method":"Player.Seek","params":{"playerid":'+active_player+',"value":"bigbackward"},"id":1}');
+	send_json_to_xbmc('/jsonrpc?request={"jsonrpc":"2.0","method":"Player.Seek","params":{"playerid":'+active_player+',"value":"'+jumps+'backward"},"id":1}');
 }
 
 function button_action_ff(){
 	//send_json_to_xbmc('/jsonrpc?request={"jsonrpc":"2.0","method":"Player.SetSpeed","params":{"playerid":'+active_player+',"speed":32},"id":1}');
-	send_json_to_xbmc('/jsonrpc?request={"jsonrpc":"2.0","method":"Player.Seek","params":{"playerid":'+active_player+',"value":"bigforward"},"id":1}');
+	send_json_to_xbmc('/jsonrpc?request={"jsonrpc":"2.0","method":"Player.Seek","params":{"playerid":'+active_player+',"value":"'+jumps+'forward"},"id":1}');
 }
 
 function button_action_long_rev(){	
@@ -242,11 +245,14 @@ function button_mute(){
 
 Pebble.addEventListener("ready",
   function(e) {
-    console.log("Preparing...");
+	console.log("Preparing...");
+
 	server=window.localStorage.getItem(1);
 	user=window.localStorage.getItem(2);
 	pass=window.localStorage.getItem(3);
 	active_player=window.localStorage.getItem(4);
+	jumps=window.localStorage.getItem(5);
+	CONSOLELOG=window.localStorage.getItem(6);
 	if (server=="undefined" || server=="null"||server===undefined || server===null){
 		server="http://YOUR_XBMC_IP:PORT";
 	}
@@ -262,21 +268,31 @@ Pebble.addEventListener("ready",
 	else{
 		server_url=server;
 	}
+	if (jumps=="undefined"|| jumps=="null"||jumps===undefined|| jumps===null|| jumps!="big" ||jumps!="small"){
+		jumps="big";
+	}
+	if (CONSOLELOG=="undefined"|| CONSOLELOG=="null"||CONSOLELOG===undefined|| CONSOLELOG===null ||CONSOLELOG == "NaN"){
+		CONSOLELOG=0;
+	} else {
+		CONSOLELOG = parseInt(CONSOLELOG);
+	}
 	if (active_player=="undefined"|| active_player=="null" || active_player===undefined|| active_player===null){
 		active_player=1;
 	}
 	//console.log(server_url);
 	get_vol();
-	console.log("JavaScript app ready and running!");
+	if (CONSOLELOG) {console.log("JavaScript app ready and running!");}
   }
 );
 
 
 Pebble.addEventListener("showConfiguration", function() {
-	console.log("showing configuration");
+	if (CONSOLELOG) {console.log("showing configuration");}
 	server=window.localStorage.getItem(1);
 	user=window.localStorage.getItem(2);
 	pass=window.localStorage.getItem(3);
+	jumps=window.localStorage.getItem(5);
+	CONSOLELOG=window.localStorage.getItem(6);
 	if (server=="undefined" || server=="null"||server===undefined || server===null){
 		server="http://XBMC_HOST:8080";
 	}
@@ -286,16 +302,24 @@ Pebble.addEventListener("showConfiguration", function() {
 	if (pass=="undefined"|| pass=="null"||pass===undefined|| pass===null){
 		pass="";
 	}
-	var url='http://46.105.20.128/xbmc_remote_config.php?server='+server+'&user='+user+'&pass='+pass;
+	if (jumps=="undefined"|| jumps=="null"||jumps===undefined|| jumps===null|| jumps!="big" ||jumps!="small"){
+		jumps="big";
+	}
+	if (CONSOLELOG=="undefined"|| CONSOLELOG=="null"||CONSOLELOG===undefined|| CONSOLELOG===null ||CONSOLELOG == "NaN"){
+		CONSOLELOG=0;
+	} else {
+		CONSOLELOG = parseInt(CONSOLELOG);
+	}
+	var url='http://pebble.cloudwatch.net/XBMC.html?server='+server+'&user='+user+'&pass='+pass+'&jumps'+jumps+'&error='+CONSOLELOG;
 	Pebble.openURL(url);
 });
 
 Pebble.addEventListener("webviewclosed", function(e) {
-	console.log("configuration closed");
+	if (CONSOLELOG){console.log("configuration closed" + CONSOLELOG + " - " + (CONSOLELOG+1));}
 	var options = JSON.parse(decodeURIComponent(e.response));
-	console.log("Options = " + JSON.stringify(options));
+	if (CONSOLELOG){console.log("Options = " + JSON.stringify(options));}
 	if (options.server!==undefined){
-		console.log("Writting vars");
+		if (CONSOLELOG){console.log("Writting vars");}
 		if (options.server.slice(-1)=="/"){
 			server=options.server.substring(0, options.server.length - 1);
 		}
@@ -304,16 +328,29 @@ Pebble.addEventListener("webviewclosed", function(e) {
 		}
 		user=options.user;
 		pass=options.pass;
+		jumps=options.jumps;
+		error=parseInt(options.error);
 		if (user!==""){
 			server_url=server.replace("://","://"+user+":"+pass+"@");
 		}
 		else{
 			server_url=server;
 		}
-		console.log(server_url);
+		if (error === 0 || error === 1)
+			CONSOLELOG = error;
+		else {
+			error = 0;
+			CONSOLELOG = 0;
+		}
+		if (jumps != "big" || jumps != "small") {
+			jumps = "big";
+		}
+		if (CONSOLELOG) {console.log(server_url);}
 		window.localStorage.setItem(1, server);
 		window.localStorage.setItem(2, user);
 		window.localStorage.setItem(3, pass);
+		window.localStorage.setItem(5, jumps);
+		window.localStorage.setItem(6, error);
 	}
 });
 
@@ -387,7 +424,7 @@ Pebble.addEventListener("appmessage",
 									button_mute();
 									break;
 								default:
-									console.log("ERROR, not defined: ");
-									console.log(e.payload[1]);
+									if (CONSOLELOG) {console.log("ERROR, not defined: ");}
+									if (CONSOLELOG) {console.log(e.payload[1]);}
 							}
 						});
